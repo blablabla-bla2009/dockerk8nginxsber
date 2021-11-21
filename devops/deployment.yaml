@@ -17,5 +17,5 @@ spec:
       containers:
       - name: *service-name
         image: ryazvenka/dockerk8nginxsber:v1
-        command: ["nginx", "-g", "daemon off;"]
+        command: ["/usr/sbin/nginx", "-g", "daemon off;"]
         imagePullPolicy: Always
