@@ -1,0 +1,82 @@
+pipeline {
+    agent any
+    options {
+        ansiColor('xterm')
+    }
+    environment {
+        MANAGEMENT_HOST = "11.0.0.110"
+        INST_DIR = "/data"
+        TMP_DIR = "/tmp"
+        ARCH_FILE= "sber.tar"
+        DOCKER_HOST = "11.0.0.104" //my laptop
+    }
+    stages {
+        stage('Checkout'){
+            steps {
+                git credentialsId: "ssh_jenkins_for_github", url: 'git@github.com:blablabla-bla2009/dockerk8nginxsber.git', branch: 'main'
+            }
+        }
+        stage('Archive'){
+            steps{
+                sh 'tar --exclude .git -cf $ARCH_FILE -C ${WORKSPACE} ./'
+            }
+        }
+        stage('Move Archive'){
+            steps{
+                sh 'ssh -T root@$MANAGEMENT_HOST hostname'
+        //        sh 'ssh -T root@$MANAGEMENT_HOST kubectl version'
+                sh 'ssh -T root@$MANAGEMENT_HOST mkdir -p $INST_DIR'
+                sh 'ssh -T root@$MANAGEMENT_HOST rm -rf $INST_DIR/*'
+                sh 'scp ./$ARCH_FILE root@$MANAGEMENT_HOST:$INST_DIR/$ARCH_FILE'
+                sh 'ssh -T root@$MANAGEMENT_HOST tar -xf $INST_DIR/$ARCH_FILE -C $INST_DIR > /dev/null 2>&1'
+                sh 'ssh -T root@$MANAGEMENT_HOST rm -r $INST_DIR/$ARCH_FILE'
+                //sh 'ssh -T root@$MANAGEMENT_HOST ansible-playbook -i /data/ansible/hosts  /data/ansible/playbook_sber.yml'
+                sh 'rm -r ${WORKSPACE}/$ARCH_FILE'
+           }
+        }
+        stage('Deploy K8S'){
+            steps{
+                sh 'ssh -T ryazvenka@$DOCKER_HOST "cd /home/ryazvenka/Temp/JobTest2 && \
+                    rm -rf /home/ryazvenka/Temp/JobTest2/dockerk8nginxsber && \
+                    git clone https://github.com/blablabla-bla2009/dockerk8nginxsber.git || exit 0 && \
+                    cd /home/ryazvenka/Temp/JobTest2/dockerk8nginxsber && pwd && \
+                    docker build -t ryazvenka/dockerk8nginxsber:v1 -f ./Dockerfile_nginx_sber . && \
+                    docker push ryazvenka/dockerk8nginxsber:v1 && \
+                    kubectl delete deployment dockerk8nginxsber || exit 0 && \
+                    kubectl delete service dockerk8nginxsber || exit 0 && \
+                    sleep 3 && \
+                    kubectl apply -f devops/deployment.yaml && \
+                    kubectl apply -f devops/service.yaml && \
+                    sleep 3"'
+                }
+        }
+        stage('Check Status K8S'){
+            steps{
+                sh 'ssh -T ryazvenka@$DOCKER_HOST kubectl wait --for=condition=available --timeout=600s deployment/dockerk8nginxsber'
+                //sh "ssh -T ryazvenka@$DOCKER_HOST kubectl get pods -l app=dockerk8nginxsber -o 'jsonpath={..status.conditions[?\(@.type==\"Ready\"\)].status}'"
+            }
+        }
+        stage(AnsibleDeploy) {
+            steps {
+                sh 'ssh -T root@$MANAGEMENT_HOST ansible-playbook -i /data/ansible/hosts  /data/ansible/playbook_sber.yml'
+                //dir("${WORKSPACE}/ansible") {
+                //    sh "pwd"
+                    //ansiColor('xterm') {
+                //    wrap([$class: 'AnsiColorBuildWrapper', colorMapName: "xterm"]) {
+                //        ansiblePlaybook(
+                //        playbook: './playbook_sber.yml',
+                //        inventory: './hosts',
+                //        colorized: true)
+                //    }
+                //}
+                //ansiColor('xterm') {
+                //wrap([$class: 'AnsiColorBuildWrapper', colorMapName: "xterm"]) {
+                //ansiblePlaybook(
+                //    playbook: "${WORKSPACE}/ansible/playbook_sber.yml",
+                //    inventory: "${WORKSPACE}/ansible/hosts",
+                //    colorized: true)
+                //}
+            }
+        }
+    }
+}
