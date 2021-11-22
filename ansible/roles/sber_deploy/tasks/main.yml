@@ -2,5 +2,6 @@
 
 - name: Display the config
   debug:
-    var: ansible_facts
+    msg: "Hostname =  {{ ansible_facts.hostname }}"
+#    var: ansible_facts
 
