@@ -10,6 +10,7 @@ pipeline {
         ARCH_FILE= "sber.tar"
         DOCKER_HOST = "11.0.0.104" //my laptop
     }
+
     stages {
         stage('Checkout'){
             steps {
