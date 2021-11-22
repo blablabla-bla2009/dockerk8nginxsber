@@ -5,3 +5,11 @@
     msg: "Hostname =  {{ ansible_facts.hostname }}"
 #    var: ansible_facts
 
+- name: Run a shell command and register its output as a variable
+  shell: psql --version
+  register: command_result
+
+- name: Show Value of command_result
+  debug:
+    var: command_result.stdout
+
