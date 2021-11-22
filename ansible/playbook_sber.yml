@@ -1,5 +1,5 @@
 ---
-- hosts: linux-hosts
+- hosts: linux_hosts
   user: ryazvenka
   become: yes
   roles:
