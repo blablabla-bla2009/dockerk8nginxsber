@@ -23,5 +23,5 @@
 
 - name: Show check result
   debug:
-    msg: Result: {{ command_result_1.stdout }} = {{ command_result_2.stdout }}
+    msg: "Result: {{ command_result_1.stdout }} = {{ command_result_2.stdout }}"
     when: {{ command_result_1.stdout }} == {{ command_result_2.stdout }}
