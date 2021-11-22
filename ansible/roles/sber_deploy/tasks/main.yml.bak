@@ -1,0 +1,105 @@
+---
+  - name: Install CentOS Epel-Release
+    yum:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+      - epel-release
+
+  - name: Install StrongSwan
+    yum:
+      name: "{{ packages }}"
+      state: present
+      update_cache: yes
+    vars:
+      packages:
+      - strongswan
+
+  - name: Write ipsec.conf
+    template: src=ipsec.conf.j2 dest=/etc/strongswan/ipsec.conf owner=root group=root mode=0644 backup=yes
+    tags: strongswan
+    notify:
+      - restart strongswan
+
+  - name: Write ipsec.secrets
+    template: src=ipsec.secrets.j2 dest=/etc/strongswan/ipsec.secrets owner=root group=root mode=0600 backup=yes
+    notify:
+      - restart strongswan
+
+  - name: Enable packet forwarding for IPv4
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: 1
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+  - name: Do not accept ICMP redirects (prevent MITM attacks)
+    sysctl:
+      name: net.ipv4.conf.all.accept_redirects
+      value: 0
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+  - name: Do not send ICMP redirects
+    sysctl:
+      name: net.ipv4.conf.all.send_redirects
+      value: 0
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+  - name: Disable Path MTU discovery to prevent packet fragmentation problems
+    sysctl:
+      name: net.ipv4.ip_no_pmtu_disc
+      value: 1
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+  - name: 'Configure firewall: accept UDP port 4500, 500'
+    firewalld:
+      port: '{{ item }}'
+      zone:      public
+      permanent: yes
+      immediate: yes
+      state:     enabled
+    with_items:
+      - 4500/udp
+      - 500/udp
+    notify:
+      - restart firewalld
+
+  - name: 'Configure firewall: add protocol'
+    firewalld:
+      rich_rule: '{{ item }}'
+      zone: public
+      permanent: yes
+      immediate: yes
+      state: enabled
+    with_items:
+      - 'rule protocol value="esp" accept'
+      - 'rule protocol value="ah" accept'
+    notify:
+      - restart firewalld
+
+  - name: 'Configure firewall: add service ipsec'
+    firewalld:
+      zone: public
+      service: ipsec
+      permanent: yes
+      state: enabled
+    notify:
+      - restart firewalld
+
+  - name: 'Configure firewall: add masquerade'
+    firewalld:
+      zone: public
+      masquerade: yes
+      state: enabled
+      permanent: yes
+    notify:
+      - restart firewalld

@@ -1,0 +1,7 @@
+---
+- hosts: linux-hosts
+  user: ryazvenka
+  become: yes
+  roles:
+  - sber_deploy
+
