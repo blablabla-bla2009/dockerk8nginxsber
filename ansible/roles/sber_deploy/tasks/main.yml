@@ -20,3 +20,8 @@
 - name: Show Value of command_result_2
   debug:
     var: command_result_2.stdout
+
+- name: Show check result
+  debug:
+    msg: Result: {{ command_result_1.stdout }} = {{ command_result_2.stdout }}
+    when: {{ command_result_1.stdout }} == {{ command_result_2.stdout }}
