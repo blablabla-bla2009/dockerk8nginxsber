@@ -7,9 +7,16 @@
 
 - name: Run a shell command and register its output as a variable
   shell: psql --version
-  register: command_result
+  register: command_result_1
 
-- name: Show Value of command_result
+- name: Show Value of command_result_1
   debug:
-    var: command_result.stdout
+    var: command_result.stdout_1
 
+- name: Run a shell command and register its output as a variable
+  shell: psql --version
+  register: command_result_2
+
+- name: Show Value of command_result_2
+  debug:
+    var: command_result.stdout_2
