@@ -11,7 +11,7 @@
 
 - name: Show Value of command_result_1
   debug:
-    var: command_result.stdout_1
+    var: command_result_1.stdout
 
 - name: Run a shell command and register its output as a variable
   shell: psql --version
@@ -19,4 +19,4 @@
 
 - name: Show Value of command_result_2
   debug:
-    var: command_result.stdout_2
+    var: command_result_2.stdout
